@@ -1,6 +1,10 @@
-export { loadConfig } from './config.js';
+export { loadConfig, getDefaultConfigPath, resolveConfigPath } from './config.js';
 export { AutotuneDb } from './storage/sqlite.js';
 export { ingestTraces } from './ingest/trace-reader.js';
 export { runEval } from './eval/runner.js';
 export { runOptimize } from './optimize/runner.js';
 export { deployPromptPack, promoteOrRollbackCanary } from './packs/deployer.js';
+export { runBehaviorTuning } from './behavior/runner.js';
+export type { BehaviorConfig } from './behavior/config.js';
+export { runOnce, runDaemon } from './daemon.js';
+export { runInit } from './init.js';

@@ -5,6 +5,8 @@ After=network-online.target
 [Service]
 Type=oneshot
 Environment=NODE_ENV=production
+Environment=AUTOTUNE_CONFIG_PATH=%h/.config/dotclaw/autotune.json
+EnvironmentFile=-%h/.config/dotclaw/autotune.env
 ExecStart=/usr/bin/env autotune once
 
 [Install]

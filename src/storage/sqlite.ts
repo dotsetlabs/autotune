@@ -176,7 +176,7 @@ export class AutotuneDb {
     this.db.prepare(`
       INSERT OR REPLACE INTO eval_scores (run_id, trace_id, metric, score, reason)
       VALUES (?, ?, ?, ?, ?)
-    `).run(params.traceId, params.metric, params.evalRunId, params.score, params.reason);
+    `).run(params.evalRunId, params.traceId, params.metric, params.score, params.reason);
   }
 
   getLatestPromptPack(behavior: string): PromptPack | null {
@@ -240,6 +240,25 @@ export class AutotuneDb {
       score: typeof row.score === 'number' ? row.score : Number(row.score || 0),
       packVersions: row.prompt_pack_versions_json ? JSON.parse(String(row.prompt_pack_versions_json)) : null
     }));
+  }
+
+
+  getRecentTraces(params: { since: number; limit?: number }): TraceEvent[] {
+    const limit = typeof params.limit === 'number' && params.limit > 0 ? params.limit : null;
+    const rows = limit
+      ? this.db.prepare(`
+        SELECT t.* FROM traces t
+        WHERE t.created_at >= ?
+        ORDER BY t.created_at DESC
+        LIMIT ?
+      `).all(params.since, limit)
+      : this.db.prepare(`
+        SELECT t.* FROM traces t
+        WHERE t.created_at >= ?
+        ORDER BY t.created_at DESC
+      `).all(params.since);
+
+    return (rows as Array<Record<string, unknown>>).map(row => this.mapTraceRow(row));
   }
 
   getMeta(key: string): string | null {

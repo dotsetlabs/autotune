@@ -36,7 +36,6 @@ export function deployPromptPack(params: {
 }): void {
   const outputDir = params.config.deploy.outputDir;
   const behavior = params.pack.behavior;
-  const metric = behaviorMetric[behavior] || 'response_quality';
   const canaryPct = Math.round(params.config.deploy.canaryFraction * 100);
 
   if (params.config.deploy.canaryFraction < 1) {

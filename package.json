@@ -1,6 +1,6 @@
 {
   "name": "@dotsetlabs/autotune",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Automatic self-improvement daemon for LLM agents",
   "type": "module",
   "main": "dist/index.js",
@@ -11,14 +11,24 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "systemd",
+    "scripts"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/cli.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . --max-warnings=0",
+    "test": "npm run build && node --test test/**/*.test.js"
   },
-  "keywords": ["autotune", "llm", "evaluation", "prompt", "optimizer"],
+  "keywords": [
+    "autotune",
+    "llm",
+    "evaluation",
+    "prompt",
+    "optimizer"
+  ],
   "license": "MIT",
   "dependencies": {
     "better-sqlite3": "^11.8.1",
@@ -28,7 +38,11 @@
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.10.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "eslint": "^9.19.0",
+    "@eslint/js": "^9.19.0",
+    "typescript-eslint": "^8.23.0",
+    "globals": "^15.14.0"
   },
   "engines": {
     "node": ">=20"
