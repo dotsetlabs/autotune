@@ -4,7 +4,7 @@ Automatic self-improvement pipeline for DotClaw-style agents. Autotune ingests c
 
 ## What It Does
 - Ingests JSONL traces written by the DotClaw host.
-- Evaluates response quality and task extraction using LLM-as-judge.
+- Evaluates response quality, task extraction, tool calling, and memory policy using LLM-as-judge.
 - Generates improved prompt instructions (two-stage: Haiku 4.5 -> Sonnet 4.5).
 - Deploys prompt packs to a shared prompt directory with canary promotion.
 
@@ -30,7 +30,7 @@ Key env vars:
 - `AUTOTUNE_TRACE_DIR` (default `~/.config/dotclaw/traces`)
 - `AUTOTUNE_OUTPUT_DIR` (default `~/.config/dotclaw/prompts`)
 - `AUTOTUNE_DB_PATH` (default `~/.config/dotclaw/autotune.db`)
-- `AUTOTUNE_BEHAVIORS` (default `task-extraction,response-quality`)
+- `AUTOTUNE_BEHAVIORS` (default `task-extraction,response-quality,tool-calling,memory-policy`)
 - `AUTOTUNE_INTERVAL_MINUTES` (default `60`)
 - `AUTOTUNE_CANARY_FRACTION` (default `0.1`)
 - `AUTOTUNE_CANARY_MIN_SAMPLES` (default `20`)
@@ -48,10 +48,25 @@ DotClaw writes traces to `~/.config/dotclaw/traces` and mounts `~/.config/dotcla
 Autotune writes prompt packs to `~/.config/dotclaw/prompts`:
 - `task-extraction.json`
 - `response-quality.json`
+- `tool-calling.json`
+- `memory-policy.json`
 
 Canary packs are stored as:
 - `task-extraction.canary.json`
 - `response-quality.canary.json`
+- `tool-calling.canary.json`
+- `memory-policy.canary.json`
+
+## Systemd (Ubuntu)
+```bash
+# Copy the unit files
+sudo cp systemd/autotune.service /etc/systemd/system/autotune.service
+sudo cp systemd/autotune.timer /etc/systemd/system/autotune.timer
+
+# Enable the timer
+sudo systemctl daemon-reload
+sudo systemctl enable --now autotune.timer
+```
 
 ## Safety Notes
 - Redaction is enabled by default. Set `AUTOTUNE_REDACT=0` to disable.

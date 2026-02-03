@@ -55,7 +55,7 @@ function parseBoolean(value: string | undefined, fallback: boolean): boolean {
 }
 
 function parseBehaviors(value: string | undefined): string[] {
-  if (!value) return ['task-extraction', 'response-quality'];
+  if (!value) return ['task-extraction', 'response-quality', 'tool-calling', 'memory-policy'];
   return value
     .split(',')
     .map(item => item.trim())

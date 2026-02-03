@@ -1,0 +1,11 @@
+[Unit]
+Description=Autotune Self-Improvement Pipeline
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/env autotune once
+
+[Install]
+WantedBy=multi-user.target
