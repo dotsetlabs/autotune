@@ -11,10 +11,16 @@ const TRACE_SCHEMA = z.object({
   input_text: z.string(),
   output_text: z.string().nullable(),
   model_id: z.string(),
-  prompt_pack_versions: z.record(z.string()).optional(),
+  prompt_pack_versions: z.record(z.string(), z.string()).optional(),
   memory_summary: z.string().optional(),
   memory_facts: z.array(z.string()).optional(),
-  tool_calls: z.any().optional(),
+  tool_calls: z.array(z.object({
+    name: z.string(),
+    ok: z.boolean(),
+    args: z.any().optional(),
+    duration_ms: z.number().optional(),
+    error: z.string().optional()
+  })).optional(),
   latency_ms: z.number().optional(),
   tokens_prompt: z.number().optional(),
   tokens_completion: z.number().optional(),
@@ -38,12 +44,38 @@ function normalizePromptPackVersions(raw: unknown): Record<string, string> | und
   if (!raw) return undefined;
   if (typeof raw === 'string') {
     try {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      return normalizePromptPackVersions(parsed);
     } catch {
       return undefined;
     }
   }
-  if (typeof raw === 'object') return raw as Record<string, string>;
+  if (typeof raw === 'object') {
+    const entries = Object.entries(raw as Record<string, unknown>)
+      .filter(([, value]) => typeof value === 'string')
+      .map(([key, value]) => [key, value as string]);
+    return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+  }
+  return undefined;
+}
+
+function normalizeToolCalls(raw: unknown): Array<{ name: string; ok: boolean; args?: unknown; duration_ms?: number; error?: string }> | undefined {
+  if (!raw) return undefined;
+  if (Array.isArray(raw)) {
+    const normalized = raw.map(item => {
+      if (!item || typeof item !== 'object') return null;
+      const record = item as Record<string, unknown>;
+      if (typeof record.name !== 'string' || typeof record.ok !== 'boolean') return null;
+      return {
+        name: record.name,
+        ok: record.ok,
+        args: record.args,
+        duration_ms: typeof record.duration_ms === 'number' ? record.duration_ms : undefined,
+        error: typeof record.error === 'string' ? record.error : undefined
+      };
+    }).filter(Boolean) as Array<{ name: string; ok: boolean; args?: unknown; duration_ms?: number; error?: string }>;
+    return normalized.length > 0 ? normalized : undefined;
+  }
   return undefined;
 }
 
@@ -75,7 +107,7 @@ export function normalizeTrace(raw: unknown): TraceEvent | null {
     prompt_pack_versions: normalizePromptPackVersions(record.prompt_pack_versions || record.prompt_pack_versions_json || record.prompt_pack_version),
     memory_summary: record.memory_summary ? String(record.memory_summary) : undefined,
     memory_facts: Array.isArray(record.memory_facts) ? record.memory_facts.map(String) : undefined,
-    tool_calls: record.tool_calls ?? undefined,
+    tool_calls: normalizeToolCalls(record.tool_calls),
     latency_ms: typeof record.latency_ms === 'number' ? record.latency_ms : undefined,
     tokens_prompt: typeof record.tokens_prompt === 'number' ? record.tokens_prompt : undefined,
     tokens_completion: typeof record.tokens_completion === 'number' ? record.tokens_completion : undefined,
