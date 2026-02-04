@@ -17,11 +17,27 @@ export function getDefaultInstructions(behavior: string): string {
     ].join(' ');
   }
 
+  if (behavior === 'tool-outcome') {
+    return [
+      'When tools are used, incorporate the results explicitly.',
+      'Summarize tool outputs accurately and acknowledge any errors.',
+      'If a tool failed or output was truncated, explain limitations and next steps.'
+    ].join(' ');
+  }
+
   if (behavior === 'memory-policy') {
     return [
       'Use memory facts only when relevant to the user request.',
       'Do not invent or assume memory that is not present.',
       'If memory is missing, ask a clarifying question.'
+    ].join(' ');
+  }
+
+  if (behavior === 'memory-recall') {
+    return [
+      'Use recalled memory only when it is clearly relevant to the user request.',
+      'Do not contradict recalled facts; prefer citing them explicitly.',
+      'If recall is missing or ambiguous, ask a clarification instead of guessing.'
     ].join(' ');
   }
 

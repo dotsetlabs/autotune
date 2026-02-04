@@ -16,11 +16,20 @@ const SCHEMA = `CREATE TABLE IF NOT EXISTS traces (
   prompt_pack_versions_json TEXT,
   memory_summary TEXT,
   memory_facts_json TEXT,
+  memory_recall_json TEXT,
+  session_recall_json TEXT,
   tool_calls_json TEXT,
   tool_results_json TEXT,
   latency_ms INTEGER,
   tokens_prompt INTEGER,
   tokens_completion INTEGER,
+  cost_prompt_usd REAL,
+  cost_completion_usd REAL,
+  cost_total_usd REAL,
+  memory_recall_count INTEGER,
+  session_recall_count INTEGER,
+  memory_items_upserted INTEGER,
+  memory_items_extracted INTEGER,
   error_code TEXT,
   source TEXT
 );
@@ -96,6 +105,26 @@ export class AutotuneDb {
       }
     }
     this.db.exec(schema);
+
+    // Migrate existing DBs for new trace fields.
+    const alterColumns = [
+      'cost_prompt_usd REAL',
+      'cost_completion_usd REAL',
+      'cost_total_usd REAL',
+      'memory_recall_count INTEGER',
+      'session_recall_count INTEGER',
+      'memory_items_upserted INTEGER',
+      'memory_items_extracted INTEGER',
+      'memory_recall_json TEXT',
+      'session_recall_json TEXT'
+    ];
+    for (const column of alterColumns) {
+      try {
+        this.db.exec(`ALTER TABLE traces ADD COLUMN ${column}`);
+      } catch {
+        // column already exists
+      }
+    }
   }
 
   insertTrace(trace: TraceEvent): void {
@@ -103,9 +132,12 @@ export class AutotuneDb {
       INSERT OR IGNORE INTO traces (
         trace_id, created_at, timestamp, group_folder, chat_id, user_id,
         input_text, output_text, model_id, prompt_pack_versions_json,
-        memory_summary, memory_facts_json, tool_calls_json, tool_results_json,
-        latency_ms, tokens_prompt, tokens_completion, error_code, source
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        memory_summary, memory_facts_json, memory_recall_json, session_recall_json, tool_calls_json, tool_results_json,
+        latency_ms, tokens_prompt, tokens_completion,
+        cost_prompt_usd, cost_completion_usd, cost_total_usd,
+        memory_recall_count, session_recall_count, memory_items_upserted, memory_items_extracted,
+        error_code, source
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
       trace.trace_id,
@@ -120,11 +152,20 @@ export class AutotuneDb {
       trace.prompt_pack_versions ? JSON.stringify(trace.prompt_pack_versions) : null,
       trace.memory_summary || null,
       trace.memory_facts ? JSON.stringify(trace.memory_facts) : null,
+      trace.memory_recall ? JSON.stringify(trace.memory_recall) : null,
+      trace.session_recall ? JSON.stringify(trace.session_recall) : null,
       trace.tool_calls ? JSON.stringify(trace.tool_calls) : null,
       null,
       trace.latency_ms ?? null,
       trace.tokens_prompt ?? null,
       trace.tokens_completion ?? null,
+      trace.cost_prompt_usd ?? null,
+      trace.cost_completion_usd ?? null,
+      trace.cost_total_usd ?? null,
+      trace.memory_recall_count ?? null,
+      trace.session_recall_count ?? null,
+      trace.memory_items_upserted ?? null,
+      trace.memory_items_extracted ?? null,
       trace.error_code || null,
       trace.source || null
     );
@@ -286,10 +327,19 @@ export class AutotuneDb {
       prompt_pack_versions: row.prompt_pack_versions_json ? JSON.parse(String(row.prompt_pack_versions_json)) : undefined,
       memory_summary: row.memory_summary ? String(row.memory_summary) : undefined,
       memory_facts: row.memory_facts_json ? JSON.parse(String(row.memory_facts_json)) : undefined,
+      memory_recall: row.memory_recall_json ? JSON.parse(String(row.memory_recall_json)) : undefined,
+      session_recall: row.session_recall_json ? JSON.parse(String(row.session_recall_json)) : undefined,
       tool_calls: row.tool_calls_json ? JSON.parse(String(row.tool_calls_json)) : undefined,
       latency_ms: row.latency_ms ? Number(row.latency_ms) : undefined,
       tokens_prompt: row.tokens_prompt ? Number(row.tokens_prompt) : undefined,
       tokens_completion: row.tokens_completion ? Number(row.tokens_completion) : undefined,
+      cost_prompt_usd: row.cost_prompt_usd ? Number(row.cost_prompt_usd) : undefined,
+      cost_completion_usd: row.cost_completion_usd ? Number(row.cost_completion_usd) : undefined,
+      cost_total_usd: row.cost_total_usd ? Number(row.cost_total_usd) : undefined,
+      memory_recall_count: row.memory_recall_count ? Number(row.memory_recall_count) : undefined,
+      session_recall_count: row.session_recall_count ? Number(row.session_recall_count) : undefined,
+      memory_items_upserted: row.memory_items_upserted ? Number(row.memory_items_upserted) : undefined,
+      memory_items_extracted: row.memory_items_extracted ? Number(row.memory_items_extracted) : undefined,
       error_code: row.error_code ? String(row.error_code) : undefined,
       source: row.source ? String(row.source) : undefined
     };
