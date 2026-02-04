@@ -53,10 +53,16 @@ Key env vars:
 - `AUTOTUNE_TRACE_DIR` (default `~/.config/dotclaw/traces`)
 - `AUTOTUNE_OUTPUT_DIR` (default `~/.config/dotclaw/prompts`)
 - `AUTOTUNE_DB_PATH` (default `~/.config/dotclaw/autotune.db`)
-- `AUTOTUNE_BEHAVIORS` (default `task-extraction,response-quality,tool-calling,memory-policy`)
+- `AUTOTUNE_BEHAVIORS` (default `task-extraction,response-quality,tool-calling,tool-outcome,memory-policy,memory-recall`)
 - `AUTOTUNE_INTERVAL_MINUTES` (default `60`)
 - `AUTOTUNE_CANARY_FRACTION` (default `0.1`)
 - `AUTOTUNE_CANARY_MIN_SAMPLES` (default `20`)
+- `AUTOTUNE_CANARY_MIN_IMPROVEMENT` (default `0.02`)
+- `AUTOTUNE_CANARY_HEALTH_WINDOW_HOURS` (default `24`)
+- `AUTOTUNE_CANARY_MAX_ERROR_RATE` (default `0.12`)
+- `AUTOTUNE_CANARY_MAX_TOOL_FAILURE_RATE` (default `0.25`)
+- `AUTOTUNE_CANARY_MAX_ERROR_RATE_DELTA` (default `0.05`)
+- `AUTOTUNE_CANARY_MAX_TOOL_FAILURE_RATE_DELTA` (default `0.12`)
 
 Models:
 - `AUTOTUNE_CANDIDATE_MODEL` (default `anthropic/claude-haiku-4-5`)
@@ -84,13 +90,17 @@ Autotune writes prompt packs to `~/.config/dotclaw/prompts`:
 - `task-extraction.json`
 - `response-quality.json`
 - `tool-calling.json`
+- `tool-outcome.json`
 - `memory-policy.json`
+- `memory-recall.json`
 
 Canary packs are stored as:
 - `task-extraction.canary.json`
 - `response-quality.canary.json`
 - `tool-calling.canary.json`
+- `tool-outcome.canary.json`
 - `memory-policy.canary.json`
+- `memory-recall.canary.json`
 
 Behavior tuning writes `behavior.json` to the configured path and emits daily reports under the configured report directory.
 

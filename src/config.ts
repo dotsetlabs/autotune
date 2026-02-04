@@ -32,6 +32,11 @@ export interface DeployConfig {
   canaryFraction: number;
   canaryMinSamples: number;
   canaryMinImprovement: number;
+  canaryHealthWindowHours: number;
+  canaryMaxErrorRate: number;
+  canaryMaxToolFailureRate: number;
+  canaryMaxErrorRateDelta: number;
+  canaryMaxToolFailureRateDelta: number;
 }
 
 export interface BehaviorTuningConfig {
@@ -119,7 +124,12 @@ function baseDefaults(): AutotuneConfig {
       outputDir: path.join(getAutotuneHome(), 'prompts'),
       canaryFraction: 0.1,
       canaryMinSamples: 20,
-      canaryMinImprovement: 0.02
+      canaryMinImprovement: 0.02,
+      canaryHealthWindowHours: 24,
+      canaryMaxErrorRate: 0.12,
+      canaryMaxToolFailureRate: 0.25,
+      canaryMaxErrorRateDelta: 0.05,
+      canaryMaxToolFailureRateDelta: 0.12
     },
     behavior: {
       enabled: false,
@@ -136,7 +146,7 @@ function baseDefaults(): AutotuneConfig {
     traceDir: path.join(getAutotuneHome(), 'traces'),
     dbPath: path.join(getAutotuneHome(), 'autotune.db'),
     intervalMinutes: 60,
-    behaviors: ['task-extraction', 'response-quality', 'tool-calling', 'memory-policy'],
+    behaviors: ['task-extraction', 'response-quality', 'tool-calling', 'tool-outcome', 'memory-policy', 'memory-recall'],
     redact: true,
     evalMaxTraces: 200
   };
@@ -195,7 +205,12 @@ function applyEnv(config: AutotuneConfig): AutotuneConfig {
       outputDir: process.env.AUTOTUNE_OUTPUT_DIR || config.deploy.outputDir,
       canaryFraction: parseNumber(process.env.AUTOTUNE_CANARY_FRACTION, config.deploy.canaryFraction),
       canaryMinSamples: Math.round(parseNumber(process.env.AUTOTUNE_CANARY_MIN_SAMPLES, config.deploy.canaryMinSamples)),
-      canaryMinImprovement: parseNumber(process.env.AUTOTUNE_CANARY_MIN_IMPROVEMENT, config.deploy.canaryMinImprovement)
+      canaryMinImprovement: parseNumber(process.env.AUTOTUNE_CANARY_MIN_IMPROVEMENT, config.deploy.canaryMinImprovement),
+      canaryHealthWindowHours: parseNumber(process.env.AUTOTUNE_CANARY_HEALTH_WINDOW_HOURS, config.deploy.canaryHealthWindowHours),
+      canaryMaxErrorRate: parseNumber(process.env.AUTOTUNE_CANARY_MAX_ERROR_RATE, config.deploy.canaryMaxErrorRate),
+      canaryMaxToolFailureRate: parseNumber(process.env.AUTOTUNE_CANARY_MAX_TOOL_FAILURE_RATE, config.deploy.canaryMaxToolFailureRate),
+      canaryMaxErrorRateDelta: parseNumber(process.env.AUTOTUNE_CANARY_MAX_ERROR_RATE_DELTA, config.deploy.canaryMaxErrorRateDelta),
+      canaryMaxToolFailureRateDelta: parseNumber(process.env.AUTOTUNE_CANARY_MAX_TOOL_FAILURE_RATE_DELTA, config.deploy.canaryMaxToolFailureRateDelta)
     },
     behavior: {
       ...config.behavior,

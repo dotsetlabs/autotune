@@ -11,8 +11,19 @@ function describeToolCalls(trace: TraceEvent): string {
   if (!trace.tool_calls || trace.tool_calls.length === 0) return 'None.';
   return trace.tool_calls.map(call => {
     const args = call.args ? JSON.stringify(call.args).slice(0, 600) : '';
-    return `- ${call.name} (ok=${call.ok}) ${args}`;
+    const output = typeof call.output_bytes === 'number'
+      ? ` output_bytes=${call.output_bytes}${call.output_truncated ? ' (truncated)' : ''}`
+      : '';
+    const error = call.error ? ` error=${call.error.slice(0, 200)}` : '';
+    return `- ${call.name} (ok=${call.ok})${output}${error} ${args}`;
   }).join('\n');
+}
+
+function describeMemoryRecall(trace: TraceEvent): string {
+  if (trace.memory_recall && trace.memory_recall.length > 0) {
+    return trace.memory_recall.join('\n');
+  }
+  return 'None.';
 }
 
 export function getRubrics(): Rubric[] {
@@ -89,6 +100,30 @@ export function getRubrics(): Rubric[] {
     })
   };
 
+  const toolOutcome: Rubric = {
+    name: 'tool_outcome',
+    behavior: 'tool-outcome',
+    description: 'Quality of tool output usage and failure handling.',
+    buildPrompt: (trace) => ({
+      system: [
+        'You are grading whether the assistant used tool outputs correctly.',
+        'Score high if tool results are incorporated, errors are handled, and summaries are accurate.',
+        'Score low if results are ignored, hallucinated, or failures are not acknowledged.',
+        'Return JSON: {"score": number, "reason": string}. Score must be between 0 and 1.'
+      ].join(' '),
+      user: [
+        'User message:',
+        trace.input_text,
+        '',
+        'Assistant response:',
+        trace.output_text || '(empty)',
+        '',
+        'Tool calls and outcomes:',
+        describeToolCalls(trace)
+      ].join('\n')
+    })
+  };
+
   const memoryPolicy: Rubric = {
     name: 'memory_policy',
     behavior: 'memory-policy',
@@ -116,5 +151,29 @@ export function getRubrics(): Rubric[] {
     })
   };
 
-  return [responseQuality, taskExtraction, toolCalling, memoryPolicy];
+  const memoryRecall: Rubric = {
+    name: 'memory_recall',
+    behavior: 'memory-recall',
+    description: 'Whether retrieved long-term memory was used appropriately.',
+    buildPrompt: (trace) => ({
+      system: [
+        'You are grading whether the assistant used retrieved memory appropriately.',
+        'Score high if it uses relevant recalled facts and avoids inventing unsupported memory.',
+        'Score low if it ignores clearly relevant recall or contradicts it.',
+        'Return JSON: {"score": number, "reason": string}. Score must be between 0 and 1.'
+      ].join(' '),
+      user: [
+        'Memory recall:',
+        describeMemoryRecall(trace),
+        '',
+        'User message:',
+        trace.input_text,
+        '',
+        'Assistant response:',
+        trace.output_text || '(empty)'
+      ].join('\n')
+    })
+  };
+
+  return [responseQuality, taskExtraction, toolCalling, toolOutcome, memoryPolicy, memoryRecall];
 }

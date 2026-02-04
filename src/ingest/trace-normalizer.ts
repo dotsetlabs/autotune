@@ -14,16 +14,27 @@ const TRACE_SCHEMA = z.object({
   prompt_pack_versions: z.record(z.string(), z.string()).optional(),
   memory_summary: z.string().optional(),
   memory_facts: z.array(z.string()).optional(),
+  memory_recall: z.array(z.string()).optional(),
+  session_recall: z.array(z.string()).optional(),
   tool_calls: z.array(z.object({
     name: z.string(),
     ok: z.boolean(),
     args: z.any().optional(),
     duration_ms: z.number().optional(),
-    error: z.string().optional()
+    error: z.string().optional(),
+    output_bytes: z.number().optional(),
+    output_truncated: z.boolean().optional()
   })).optional(),
   latency_ms: z.number().optional(),
   tokens_prompt: z.number().optional(),
   tokens_completion: z.number().optional(),
+  cost_prompt_usd: z.number().optional(),
+  cost_completion_usd: z.number().optional(),
+  cost_total_usd: z.number().optional(),
+  memory_recall_count: z.number().optional(),
+  session_recall_count: z.number().optional(),
+  memory_items_upserted: z.number().optional(),
+  memory_items_extracted: z.number().optional(),
   error_code: z.string().optional(),
   source: z.string().optional()
 });
@@ -59,7 +70,7 @@ function normalizePromptPackVersions(raw: unknown): Record<string, string> | und
   return undefined;
 }
 
-function normalizeToolCalls(raw: unknown): Array<{ name: string; ok: boolean; args?: unknown; duration_ms?: number; error?: string }> | undefined {
+function normalizeToolCalls(raw: unknown): Array<{ name: string; ok: boolean; args?: unknown; duration_ms?: number; error?: string; output_bytes?: number; output_truncated?: boolean }> | undefined {
   if (!raw) return undefined;
   if (Array.isArray(raw)) {
     const normalized = raw.map(item => {
@@ -71,9 +82,11 @@ function normalizeToolCalls(raw: unknown): Array<{ name: string; ok: boolean; ar
         ok: record.ok,
         args: record.args,
         duration_ms: typeof record.duration_ms === 'number' ? record.duration_ms : undefined,
-        error: typeof record.error === 'string' ? record.error : undefined
+        error: typeof record.error === 'string' ? record.error : undefined,
+        output_bytes: typeof record.output_bytes === 'number' ? record.output_bytes : undefined,
+        output_truncated: typeof record.output_truncated === 'boolean' ? record.output_truncated : undefined
       };
-    }).filter(Boolean) as Array<{ name: string; ok: boolean; args?: unknown; duration_ms?: number; error?: string }>;
+    }).filter(Boolean) as Array<{ name: string; ok: boolean; args?: unknown; duration_ms?: number; error?: string; output_bytes?: number; output_truncated?: boolean }>;
     return normalized.length > 0 ? normalized : undefined;
   }
   return undefined;
@@ -107,10 +120,19 @@ export function normalizeTrace(raw: unknown): TraceEvent | null {
     prompt_pack_versions: normalizePromptPackVersions(record.prompt_pack_versions || record.prompt_pack_versions_json || record.prompt_pack_version),
     memory_summary: record.memory_summary ? String(record.memory_summary) : undefined,
     memory_facts: Array.isArray(record.memory_facts) ? record.memory_facts.map(String) : undefined,
+    memory_recall: Array.isArray(record.memory_recall) ? record.memory_recall.map(String) : undefined,
+    session_recall: Array.isArray(record.session_recall) ? record.session_recall.map(String) : undefined,
     tool_calls: normalizeToolCalls(record.tool_calls),
     latency_ms: typeof record.latency_ms === 'number' ? record.latency_ms : undefined,
     tokens_prompt: typeof record.tokens_prompt === 'number' ? record.tokens_prompt : undefined,
     tokens_completion: typeof record.tokens_completion === 'number' ? record.tokens_completion : undefined,
+    cost_prompt_usd: typeof record.cost_prompt_usd === 'number' ? record.cost_prompt_usd : undefined,
+    cost_completion_usd: typeof record.cost_completion_usd === 'number' ? record.cost_completion_usd : undefined,
+    cost_total_usd: typeof record.cost_total_usd === 'number' ? record.cost_total_usd : undefined,
+    memory_recall_count: typeof record.memory_recall_count === 'number' ? record.memory_recall_count : undefined,
+    session_recall_count: typeof record.session_recall_count === 'number' ? record.session_recall_count : undefined,
+    memory_items_upserted: typeof record.memory_items_upserted === 'number' ? record.memory_items_upserted : undefined,
+    memory_items_extracted: typeof record.memory_items_extracted === 'number' ? record.memory_items_extracted : undefined,
     error_code: record.error_code ? String(record.error_code) : undefined,
     source: record.source ? String(record.source) : undefined
   };
